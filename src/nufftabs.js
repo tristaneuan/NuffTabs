@@ -1,6 +1,6 @@
 // variables
 var currentTabId; // ID of currently active tab
-var maxTabs; // maximum number of tabs allowed per window
+var maxTabs; // maximum number of tabs allowed per window or session
 var startActive; // time at which active tab started being active
 var tabTimes = new Array(); // array with activity times (tab times table)
 
@@ -42,6 +42,9 @@ function init() {
   if (localStorage.maxTabs == undefined) {
     localStorage.maxTabs = 10; // default
   }
+  if (localStorage.countTabsPerWindow == undefined) {
+    localStorage.countTabsPerWindow = true; // default
+  }
   if (localStorage.ignorePinned == undefined) {
     localStorage.ignorePinned = 1;
   }
@@ -70,12 +73,13 @@ function createTimes(tabId) {
   tabTimes[tabId] = {totalActive:0, lastActive: Date.now()};
 }
 
-// update count on badge (only valid for active window)
+// update count on badge
 function updateBadge() {
   if (localStorage.showCount == '1'){
     chrome.browserAction.setBadgeBackgroundColor({ color: [0, 0, 0, 92] });
     
-    chrome.tabs.query({ lastFocusedWindow: true }, function(tabs) {
+    var options = (localStorage.countTabsPerWindow === 'true') ? { lastFocusedWindow: true } : {};
+    chrome.tabs.query(options, function(tabs) {
       if (localStorage.ignorePinned == '1') {
         tabs = tabs.filter(function (tab) {
           return !tab.pinned;
@@ -122,7 +126,11 @@ function updateTimesAndId() {
 
 // set the ID of the current tab
 function updateCurrentTabId() {
-  chrome.tabs.query({ lastFocusedWindow: true, active: true }, function (tabs) {
+  var options = { active: true };
+  if (localStorage.countTabsPerWindow === 'true') {
+    options.lastFocusedWindow = true;
+  }
+  chrome.tabs.query(options, function (tabs) {
     if (typeof tabs[0] === 'undefined') {
       currentTabId = -1;
     }
@@ -137,8 +145,9 @@ function updateCurrentTabId() {
 // actions to perform upon adding a tab
 function checkTabAdded(newTabId) {
   
-  // check tabs of current window
-  chrome.tabs.query({ currentWindow: true }, function(tabs) {
+  // check tabs of current window or session
+  var options = (localStorage.countTabsPerWindow === 'true') ? { currentWindow: true } : {};
+  chrome.tabs.query(options, function(tabs) {
 
     if (localStorage.ignorePinned == '1') {
       tabs = tabs.filter(function (tab) {

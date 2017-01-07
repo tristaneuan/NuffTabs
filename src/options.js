@@ -1,11 +1,12 @@
 // fill in selected options
 function init() {
 	var maxTabs = localStorage.maxTabs;
+	var countTabsPerWindow = localStorage.countTabsPerWindow;
 	var discardCriterion = localStorage.discardCriterion;
 	var ignorePinned = localStorage.ignorePinned;
 	var showCount = localStorage.showCount;
 	
-	if (!maxTabs && !discardCriterion && !ignorePinned && !showCount) {
+	if (!maxTabs && !countTabsPerWindow && !discardCriterion && !ignorePinned && !showCount) {
 		return;
 	}
 
@@ -13,6 +14,15 @@ function init() {
 	for (var i = 0; i < selector.children.length; i++) {
 		var child = selector.children[i];
 		if (child.value == maxTabs) {
+			child.selected = "true";
+		break;
+		}
+	}
+
+	var selector = document.getElementById("countTabsPerWindow");
+	for (var i = 0; i < selector.children.length; i++) {
+		var child = selector.children[i];
+		if (child.value == countTabsPerWindow) {
 			child.selected = "true";
 		break;
 		}
@@ -46,13 +56,18 @@ function init() {
 	}
 }
 
-function saveMe() {
+function save() {
 	localStorage.maxTabs = document.getElementById("maxTabs").value;
+	localStorage.countTabsPerWindow = document.getElementById("countTabsPerWindow").value;
 	localStorage.discardCriterion = document.getElementById("discardCriterion").value;
 	localStorage.ignorePinned = document.getElementById("ignorePinned").value;
 	localStorage.showCount = document.getElementById("showCount").value;
 
 	document.getElementById('messages').innerHTML = "Options saved.";
+}
+
+function saveMe() {
+  save();
 	setTimeout(function() {
 		document.getElementById('messages').innerHTML = "";
 	}, 1500);
@@ -63,12 +78,7 @@ function closeMe() {
 }
 
 function saveClose() {
-	localStorage.maxTabs = document.getElementById("maxTabs").value;
-	localStorage.discardCriterion = document.getElementById("discardCriterion").value;
-	localStorage.ignorePinned = document.getElementById("ignorePinned").value;
-	localStorage.showCount = document.getElementById("showCount").value;
-
-	document.getElementById('messages').innerHTML = "Options saved.";
+  save();
 	setTimeout(function() {
 		window.close();
 	}, 1000);
