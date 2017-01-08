@@ -5,7 +5,7 @@
   "author": "Steven Van Vaerenbergh",
   "version": "0.5",
   "description": "Limit the number of open tabs. Automatically close previous tabs.",
-  "permissions": ["tabs"],
+  "permissions": ["bookmarks", "tabs"],
   "icons": {
     "19": "i/nufftabs19.png",
     "32": "i/nufftabs32.png",

@@ -3,6 +3,7 @@ var currentTabId; // ID of currently active tab
 var maxTabs; // maximum number of tabs allowed per window or session
 var startActive; // time at which active tab started being active
 var tabTimes = new Array(); // array with activity times (tab times table)
+var bookmarksFolderId;
 
 var debug = true; // debug boolean
 
@@ -34,6 +35,7 @@ function printTimes() {
 
 // initialize
 function init() {
+  debugLog('INITIALIZING!');
 
   // set defaults
   if (localStorage.discardCriterion == undefined) {
@@ -66,7 +68,30 @@ function init() {
   startActive = Date.now()
   
   updateBadge();
+
+  // bookmarksFolderId = ensureBookmarksFolder();
+  ensureBookmarksFolder();
 }
+
+// create bookmarks folder if it doesn't exist, and return its id
+function ensureBookmarksFolder() {
+  var folderProperties = { title: 'NuffTabs Recently Closed Tabs' };
+  chrome.bookmarks.search(folderProperties, function(folders) {
+    if (folders.length < 1) {
+      chrome.bookmarks.create(folderProperties, function(newFolder) {
+        // return newFolder.id;
+        bookmarksFolderId = newFolder.id;
+      });
+    } else {
+      // return folders[0].id;
+      bookmarksFolderId = folders[0].id;
+    }
+  });
+}
+
+// function logBookmarksFolderId() {
+//   console.log(bookmarksFolderId);
+// }
 
 // add an entry to the tab times table
 function createTimes(tabId) {
@@ -226,6 +251,7 @@ function checkTabAdded(newTabId) {
       //debugLog('Chosen: '+tabId)
       chrome.tabs.get(tabId, function(tab){
         debugLog('Removing tab '+tab.id+': "'+tab.title+'", active time '+(Math.floor(tabTimes[tab.id].totalActive/10)/100)+'s, last active: '+tabTimes[tab.id].lastActive);
+        addBookmark(tab);
         removeTimes(tab.id);
         printTimes();
       });
@@ -237,6 +263,48 @@ function checkTabAdded(newTabId) {
     }
     updateBadge();
   });
+}
+
+// add tab as a bookmark
+function addBookmark(tab) {
+  var url = tab.url;
+  if (url) {
+    var options = { parentId: bookmarksFolderId, url: url };
+    var title = tab.title;
+    if (title) {
+      options.title = title;
+    }
+    chrome.bookmarks.create(options);
+  }
+  var bookmarks = getBookmarks();
+  debugLog('Bookmarks: ' + bookmarks.toString()); // debug
+  if (bookmarks.length > 10) { // TODO: make this value configurable
+    debugLog('Removing bookmark: ' + bookmarks[0].id);
+    chrome.bookmarks.remove(bookmarks[0].id);
+  }
+}
+
+// get NuffTabs bookmarks sorted by date
+function getBookmarks() {
+  return chrome.bookmarks.getSubTree(bookmarksFolderId, function(bookmarks) {
+    for (var b in bookmarks) {
+      debugLog('Bookmark: ' + b);
+    }
+    // return bookmarks.sort(function(a, b) {
+    //   var x = a.dateAdded; var y = b.dateAdded;
+    //   return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+    // });
+  });
+  // return bookmarks.sort(function(a, b) {
+  //   var x = a.dateAdded; var y = b.dateAdded;
+  //   return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+  // });
+}
+
+// open bookmark in new tab and remove from bookmarks
+function visitBookmark(bookmark) {
+  chrome.tabs.create({ url: bookmark.url });
+  chrome.bookmarks.remove(bookmark.id);
 }
 
 // remove entry from tab times table
